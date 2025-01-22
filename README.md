@@ -1,6 +1,6 @@
 # encrypt
 
-https://yanncarlier.github.io/encrypt/
+https://yanncarlier.github.io/encrypt/index.html
 
 # Promising Cryptography: JavaScript Promises in Encryption
 
