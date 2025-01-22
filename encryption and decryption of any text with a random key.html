@@ -1,0 +1,114 @@
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+<script>
+    function toHex(buffer) {
+        return Array.prototype.map.call(buffer, x => ('00' + x.toString(16)).slice(-2)).join('');
+    }
+    function buf2hex(buffer) { // buffer is an ArrayBuffer
+        return [...new Uint8Array(buffer)]
+            .map(x => x.toString(16).padStart(2, '0'))
+            .join('');
+    }
+    (() => {
+        let ciphertext;
+        let iv;
+        function getMessage() {
+            let message = document.getElementById('message').value;
+            let enc = new TextEncoder();
+            return enc.encode(message);
+        }
+        async function encryptMessage(key) {
+            let encoded = getMessage();
+            iv = window.crypto.getRandomValues(new Uint8Array(12));
+            ciphertext = await window.crypto.subtle.encrypt(
+                {
+                    name: "AES-GCM",
+                    iv: iv
+                },
+                key,
+                encoded
+            );
+            let buffer = new Uint8Array(ciphertext);
+            let k = await exportKey(key);
+            document.getElementById('cipher').value = "Key: " + k;
+            document.getElementById('cipher').value += "\nIV: " + buf2hex(iv);
+            document.getElementById('cipher').value += "\nCipher: " + toHex(buffer);
+        }
+        async function exportKey(k) {
+            const exported = await window.crypto.subtle.exportKey("jwk", k);
+            console.log("Exported Public Key: ", exported.k);
+            return exported.k;
+        }
+        async function decryptMessage(key) {
+            let decrypted = await window.crypto.subtle.decrypt(
+                {
+                    name: "AES-GCM",
+                    iv: iv
+                },
+                key,
+                ciphertext
+            );
+            let dec = await new TextDecoder();
+            document.getElementById('decipher').value = await dec.decode(decrypted);
+        }
+        window.crypto.subtle.generateKey(
+            {
+                name: "AES-GCM",
+                length: 256,
+            },
+            true,
+            ["encrypt", "decrypt"]
+        ).then((key) => {
+            exportKey(key).then((k) => {
+                document.getElementById('cipher').value = "Key: " + k;
+            });
+            const encryptButton = document.getElementById('button-encrypt');
+            encryptButton.addEventListener("click", () => {
+                encryptMessage(key);
+            });
+            const decryptButton = document.getElementById('button-decrypt');
+            decryptButton.addEventListener("click", () => {
+                decryptMessage(key);
+            });
+        });
+    })();
+</script>
+<div class="indented">
+    <h2>Signature</h2>
+    <table width="100%">
+        <tr>
+            <th>Message</th>
+            <td>
+                <textarea name="message" id="message" rows="10" cols="80"></textarea>
+            </td>
+        </tr>
+        <tr>
+            <th>Cipher</th>
+            <td>
+                <textarea name="cipher" id="cipher" rows="4" cols="80"></textarea>
+            </td>
+        </tr>
+        <tr>
+            <th>Decipher</th>
+            <td>
+                <textarea name="decipher" id="decipher" rows="10" cols="80"></textarea>
+            </td>
+        </tr>
+    </table>
+</div>
+<!-- <script>
+    document.getElementById('message').value = "Hello 123";
+</script> -->
+<table width="100%">
+    <tr>
+        <th width="15%">Method</th>
+        <td style="text-align:left">
+            <p>
+                <input id="genkey" class="btn btn-large btn-primary" onclick="location.reload(true)" type="button"
+                    value="Gen AES GCM Key" />
+                <input id="button-encrypt" class="btn btn-large btn-danger" type="button" value="Encrypt" />
+                <input id="button-decrypt" class="btn btn-large btn-success" type="button" value="Decrypt" />
+            </p>
+        </td>
+    </tr>
+</table>
