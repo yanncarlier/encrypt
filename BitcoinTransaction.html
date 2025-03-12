@@ -1,0 +1,166 @@
+<script src="./bit.js"></script>
+
+
+<style>
+    .dropdown {
+        font-size: 16px;
+        border: 2px solid grey;
+        width: 100%;
+        border-left: 12px solid green;
+        border-radius: 5px;
+        padding: 14px;
+    }
+
+    pre {
+        font-size: 16px;
+        border: 2px solid grey;
+        width: 100%;
+        border-left: 12px solid green;
+        border-radius: 5px;
+        padding: 14px;
+    }
+
+    textarea {
+        font-size: 20px;
+        border: 2px solid grey;
+        width: 100%;
+        border-radius: 5px;
+        padding: 14px;
+    }
+</style>
+
+
+
+
+
+
+<div class="indented">
+    <table width="100%">
+
+        <tr>
+            <th width="15%">Method</th>
+            <td style="text-align:left">
+                <p>
+                    <input id="genkey" class="btn btn-large btn-primary" type="button" value="Gen Transaction" />
+
+                </p>
+
+
+            </td>
+        </tr>
+        <tr>
+            <th width="15%">Bitcoin amount</th>
+            <td>
+
+                <textarea cols="20" id="message" name="message" rows="1" style="width:100%"></textarea>
+            </td>
+        </tr>
+
+
+    </table>
+
+
+
+
+    <h2>Keys</h2>
+    <table width="100%">
+        <tr>
+            <th valign="top" width="15%">Bob Keys</th>
+            <td>
+                <pre id="keyBob"></pre>
+
+            </td>
+        </tr>
+
+        <tr>
+            <th valign="top" width="15%">Alice Keys</th>
+            <td>
+                <pre id="keyAlice"></pre>
+
+            </td>
+        </tr>
+    </table>
+
+
+    <h2>Transaction</h2>
+    <table width="100%">
+        <tr>
+            <th valign="top" width="15%">Transaction</th>
+            <td>
+                <pre id="txid"></pre>
+
+            </td>
+        </tr>
+        <tr>
+            <th valign="top" width="15%">Bitcoin transaction</th>
+            <td>
+                <pre id="tx"></pre>
+
+            </td>
+        </tr>
+
+
+    </table>
+
+
+</div>
+
+
+<script>
+    function toHexString(byteArray) {
+        return Array.from(byteArray, function (byte) {
+            return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+        }).join('')
+    }
+
+    (async function () {
+
+
+        async function genKey() {
+
+
+            const network = Bitcoin.networks.bitcoin;
+            var bobKey = Bitcoin.ECKey.makeRandom();
+            var bobPubKey = bobKey.pub.getAddress().toString();
+            var bobPrivKey = bobKey.toWIF();
+
+            var aliceKey = Bitcoin.ECKey.makeRandom();
+            var alicePubKey = aliceKey.pub.getAddress().toString();
+            var alicePrivKey = aliceKey.toWIF();
+
+            const txId = toHexString(window.crypto.getRandomValues(new Uint8Array(32)));
+
+            console.log(txId);
+            const vout = 0;
+
+            const amountToSend = parseInt(document.getElementById('message').value);
+
+            const txBuilder = new Bitcoin.TransactionBuilder(network);
+            txBuilder.addInput(txId, vout);
+            txBuilder.addOutput(alicePubKey, amountToSend);
+
+            txBuilder.sign(0, bobKey);
+            const rawTx = txBuilder.build().toHex();
+
+            document.getElementById("txid").innerHTML = "Tx ID:\t" + txId;
+
+            document.getElementById("keyBob").innerHTML = "Bob Private key:\t" + bobPrivKey;
+            document.getElementById("keyBob").innerHTML += "\nBob Public key:\t\t" + bobPubKey;
+            document.getElementById("keyAlice").innerHTML = "Alice Private key:\t" + alicePrivKey;
+            document.getElementById("keyAlice").innerHTML += "\nAlice Public key:\t" + alicePubKey;
+            document.getElementById("tx").innerHTML = "Raw Transaction (in hex):\n" + rawTx;
+
+
+
+        }
+        document.getElementById('message').value = "5";
+
+        await genKey();
+        document.getElementById("genkey").addEventListener("click", genKey);
+        document.getElementById("message").addEventListener("click", genKey);
+
+
+
+
+    })();
+</script>
